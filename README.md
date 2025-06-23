@@ -6,4 +6,4 @@ for subtraction use -
 for substitution type the problem then substitute undernath e.g
 
 16e
-e = 2
+e = 3
