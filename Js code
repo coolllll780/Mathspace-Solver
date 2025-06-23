@@ -1,0 +1,157 @@
+(function() {
+  if (window._mathHelperBox) {
+    console.log("Math Helper already running!");
+    return;
+  }
+
+  function loadMathJs(callback) {
+    if (window.math) return callback();
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js';
+    script.onload = callback;
+    document.head.appendChild(script);
+  }
+
+  loadMathJs(() => {
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '60px';
+    container.style.right = '20px';
+    container.style.width = '380px';
+    container.style.background = '#111';
+    container.style.border = '2px solid #0f0';
+    container.style.borderRadius = '8px';
+    container.style.color = '#0f0';
+    container.style.fontFamily = 'monospace';
+    container.style.zIndex = 1000000;
+    container.style.padding = '12px';
+    container.style.boxShadow = '0 0 10px #0f0';
+    container.style.userSelect = 'none';
+
+    const titleBar = document.createElement('div');
+    titleBar.textContent = '📐 Math Helper';
+    titleBar.style.fontWeight = 'bold';
+    titleBar.style.marginBottom = '8px';
+    titleBar.style.cursor = 'move';
+    container.appendChild(titleBar);
+
+    const help = document.createElement('pre');
+    help.style.fontSize = '11px';
+    help.style.color = '#6f6';
+    help.style.whiteSpace = 'pre-wrap';
+    help.style.margin = '4px 0 12px 0';
+    help.textContent = `
+Type your problem here:
+
+✅ Supports:
+- Arithmetic: 5 + 3 * 4
+- Algebra: 2x + 3x
+- Substitution:
+  2x + 4
+  x = 5
+- Brackets, exponents, decimals, fractions
+
+➡️ Output shows simplified or evaluated answer.
+
+💡 Tip: Hide/Show with button.
+`.trim();
+    container.appendChild(help);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = 'Hide';
+    toggleBtn.style.marginBottom = '8px';
+    toggleBtn.style.padding = '5px 10px';
+    toggleBtn.style.background = '#0f0';
+    toggleBtn.style.color = '#111';
+    toggleBtn.style.border = 'none';
+    toggleBtn.style.borderRadius = '4px';
+    toggleBtn.style.cursor = 'pointer';
+    container.appendChild(toggleBtn);
+
+    const input = document.createElement('textarea');
+    input.placeholder = 'Type your math expression here...';
+    input.style.width = '100%';
+    input.style.height = '100px';
+    input.style.padding = '8px';
+    input.style.fontSize = '16px';
+    input.style.borderRadius = '4px';
+    input.style.border = '1px solid #0f0';
+    input.style.background = '#222';
+    input.style.color = '#0f0';
+    input.style.outline = 'none';
+    container.appendChild(input);
+
+    const result = document.createElement('div');
+    result.style.marginTop = '10px';
+    result.style.fontWeight = 'bold';
+    result.style.minHeight = '24px';
+    result.textContent = 'Answer: ';
+    container.appendChild(result);
+
+    document.body.appendChild(container);
+
+    // Drag functionality
+    let dragging = false, offsetX, offsetY;
+
+    titleBar.addEventListener('mousedown', e => {
+      dragging = true;
+      offsetX = e.clientX - container.getBoundingClientRect().left;
+      offsetY = e.clientY - container.getBoundingClientRect().top;
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mouseup', () => {
+      dragging = false;
+      document.body.style.userSelect = '';
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      container.style.left = (e.clientX - offsetX) + 'px';
+      container.style.top = (e.clientY - offsetY) + 'px';
+      container.style.right = 'auto';
+      container.style.bottom = 'auto';
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      const showing = input.style.display !== 'none';
+      input.style.display = showing ? 'none' : 'block';
+      result.style.display = showing ? 'none' : 'block';
+      help.style.display = showing ? 'none' : 'block';
+      toggleBtn.textContent = showing ? 'Show' : 'Hide';
+    });
+
+    input.addEventListener('input', () => {
+      const lines = input.value.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!lines.length) {
+        result.textContent = 'Answer: ';
+        return;
+      }
+
+      try {
+        const assignments = {};
+        const exprLines = [];
+
+        lines.forEach(line => {
+          const match = line.match(/^([a-zA-Z]+)\s*=\s*([-.0-9\/]+)/);
+          if (match) {
+            assignments[match[1]] = math.evaluate(match[2]);
+          } else {
+            exprLines.push(line);
+          }
+        });
+
+        const expr = exprLines.join(' ');
+        const ans = Object.keys(assignments).length
+          ? math.evaluate(expr, assignments)
+          : math.simplify(expr).toString();
+
+        result.textContent = 'Answer: ' + ans;
+      } catch (err) {
+        result.textContent = 'Answer: (invalid input)';
+      }
+    });
+
+    window._mathHelperBox = container;
+  });
+})();
